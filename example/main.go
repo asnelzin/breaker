@@ -35,7 +35,10 @@ func handler(br breaker.Breaker) http.HandlerFunc {
 		_, err := br.Call(func() (interface{}, error) {
 			return call(url)
 		})
-		w.Write([]byte(fmt.Sprintf("breaker state: %d, error: %v", br.GetState(), err)))
+		_, err = w.Write([]byte(fmt.Sprintf("breaker state: %d, error: %v", br.GetState(), err)))
+		if err != nil {
+			log.Printf("[ERR] could not write respone: %v", err)
+		}
 	}
 }
 

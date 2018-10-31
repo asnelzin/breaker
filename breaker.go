@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-// State is a Breaker state.
+// State is a type for CB state.
 type State int
 
-// State variants.
+// CircuitBreaker states.
 const (
 	Closed State = iota
 	Open
@@ -16,8 +16,10 @@ const (
 )
 
 var (
+	// ErrBreakerOpen is returned when CB is in an open state.
 	ErrBreakerOpen = fmt.Errorf("breaker is in open state")
-	ErrTimeout     = fmt.Errorf("call operation is timed out")
+	// ErrTimeout is returned when Call timed out.
+	ErrTimeout = fmt.Errorf("call operation is timed out")
 )
 
 // Breaker implements CircuitBreaker pattern.
@@ -30,9 +32,10 @@ type Breaker struct {
 	lastFailedAt time.Time
 }
 
+// GetState returns calculated CB state.
 func (b Breaker) GetState() State {
 	switch {
-	case (b.failCount >= b.Threshold) && (time.Now().Sub(b.lastFailedAt) > b.ResetTimeout):
+	case (b.failCount >= b.Threshold) && (time.Since(b.lastFailedAt) > b.ResetTimeout):
 		return HalfOpen
 	case b.failCount >= b.Threshold:
 		return Open
@@ -41,7 +44,8 @@ func (b Breaker) GetState() State {
 	}
 }
 
-// Call function with middleware logic
+// Call runs given function if the CircuitBreaker in an appropriate state.
+// Call returns error instantly is CB is Open.
 func (b *Breaker) Call(f func() (interface{}, error)) (resp interface{}, err error) {
 	switch b.GetState() {
 	case Closed, HalfOpen:
