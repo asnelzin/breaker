@@ -37,7 +37,7 @@ func handler(br breaker.Breaker) http.HandlerFunc {
 		})
 		_, err = w.Write([]byte(fmt.Sprintf("breaker state: %d, error: %v", br.GetState(), err)))
 		if err != nil {
-			log.Printf("[ERR] could not write respone: %v", err)
+			log.Printf("[ERR] could not write response: %v", err)
 		}
 	}
 }
