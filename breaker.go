@@ -15,13 +15,10 @@ const (
 	HalfOpen
 )
 
-type RecorderError struct {
-	error
-}
-
-func (e RecorderError) Error() string {
-	return e.Error()
-}
+var (
+	ErrBreakerOpen = fmt.Errorf("breaker is in open state")
+	ErrTimeout     = fmt.Errorf("call operation is timed out")
+)
 
 // Breaker implements CircuitBreaker pattern.
 type Breaker struct {
@@ -31,7 +28,6 @@ type Breaker struct {
 
 	failCount    int
 	lastFailedAt time.Time
-	lastError    RecorderError
 }
 
 func (b Breaker) GetState() State {
@@ -46,15 +42,17 @@ func (b Breaker) GetState() State {
 }
 
 // Call function with middleware logic
-func (b Breaker) Call(f func() (interface{}, error)) (resp interface{}, err error) {
+func (b *Breaker) Call(f func() (interface{}, error)) (resp interface{}, err error) {
 	switch b.GetState() {
 	case Closed, HalfOpen:
 		resp, err = b.withTimeout(f)
 		if err != nil {
 			b.recordFail()
+			return
 		}
+		b.reset()
 	case Open:
-		return nil, fmt.Errorf("CB open")
+		return nil, ErrBreakerOpen
 	}
 	return
 }
@@ -74,7 +72,7 @@ func (b Breaker) withTimeout(f func() (interface{}, error)) (resp interface{}, e
 	select {
 	case <-ch:
 	case <-timer.C:
-		return nil, fmt.Errorf("Operation timed out")
+		return nil, ErrTimeout
 	}
 	return
 }
@@ -82,4 +80,9 @@ func (b Breaker) withTimeout(f func() (interface{}, error)) (resp interface{}, e
 func (b *Breaker) recordFail() {
 	b.failCount++
 	b.lastFailedAt = time.Now()
+}
+
+func (b *Breaker) reset() {
+	b.failCount = 0
+	b.lastFailedAt = time.Time{}
 }

@@ -7,16 +7,16 @@ var counter = 0
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
-	if counter >= 2 {
+	if counter >= 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		counter = 0
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	// w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("pong")); err != nil {
 		log.Printf("[WARN] can't send pong: %s", err)
 	}
-	counter++
+	// counter++
 }
 
 func main() {
